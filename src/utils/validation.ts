@@ -16,7 +16,7 @@ export function onUsernameError(username: string, callback: Function): void {
 }
 
 export function onPasswordError(password: string, callback: Function): void {
-    // trim(); space apppropriate char for password?
+    // trim(); space appropriate char for password?
     if (password.length <= 0) {
         return callback(validateError.PASSWORD_EMPTY);
     }

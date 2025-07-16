@@ -1,9 +1,11 @@
 import { onDreamNameError, onDreamThemeError } from "../utils/validation.js";
-import { getUsername, getDreams, setDreams, getThemes } from "../services/data.js";
+import { LSKEY, load, save } from "../services/data.js";
 import Dream from "../models/Dream.js";
 import { ThemeListDefaultOption, ThemeListOption } from "../components/ThemeListItem.js";
 
 let username: string;
+let themes: string[] = [];
+let dreams: Dream[] = [];
 
 const viewUsername = document.getElementById('user-name') as HTMLElement;
 //const viewAvatar = document.querySelector("figure") as HTMLElement;
@@ -20,21 +22,23 @@ buttonSubmit.addEventListener("click", addDream);
 initPage();
 
 function initPage(): void {
-    const checkUser = getUsername();
-    if (!checkUser) {
+    load(LSKEY.USERNAME).then((data) => {
+        username = data as string;
+        viewUsername.textContent = username;
+        load(LSKEY.THEMES).then((data) => {
+            themes = data as string[];
+            renderThemes();
+        });
+        load(LSKEY.DREAMS).then((data) => {
+            dreams = data as Dream[];
+        });
+    }, () => {
         window.location.replace("login.html");
-        return;
-    }
-    username = checkUser;
-    renderPage();
+    });
 }
 
-function renderPage(): void {
-    viewUsername.textContent = getUsername();
-
-    const themes = getThemes();
+function renderThemes(): void {
     selectTheme.textContent = "";
-
     selectTheme.appendChild(ThemeListDefaultOption("-- Välj ett tema --"));
     themes.forEach(item => {
         selectTheme.appendChild(ThemeListOption(item));
@@ -67,10 +71,7 @@ function addDream(event: Event): void {
         errors++;
     });
 
-    if (errors > 0) {
-        return;
-    } else {
-        const dreams: Dream[] = getDreams();
+    if (errors <= 0) {
         let newId = 0;
         dreams.forEach(item => {
             newId = Math.max(newId, item.id);
@@ -84,7 +85,10 @@ function addDream(event: Event): void {
             checked: false
         }
         dreams.push(newDream);
-        setDreams(dreams);
+
+        save(LSKEY.DREAMS, dreams).then((data) => {
+            dreams = data as Dream[];
+        }, () => console.log("Failed to add dream"));
 
         window.location.replace("dashboard.html");
     }

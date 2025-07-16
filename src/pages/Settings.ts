@@ -1,10 +1,12 @@
 // här är det bara level-up!
 import Dream from "../models/Dream.js";
-import { getUsername, setUsername, getThemes, setThemes, getDreams, setDreams } from "../services/data.js";
+import { LSKEY, clear, load, save } from "../services/data.js";
 import { ThemeListItem } from "../components/ThemeListItem.js";
 import { onUsernameError, onDreamThemeError } from "../utils/validation.js";
 
 let username: string;
+let dreams: Dream[] = [];
+let themes: string[] = [];
 
 const inputUsername = document.querySelector(".change-name #name-input") as HTMLInputElement;
 const buttonUsername = document.querySelector('.change-name button') as HTMLButtonElement;
@@ -30,24 +32,33 @@ listThemes.addEventListener("click", (event) => {
 });
 
 function initPage(): void {
-    const checkUser = getUsername();
-    if (!checkUser) {
+    load(LSKEY.USERNAME).then((data) => {
+        username = data as string;
+        inputUsername.value = username;
+
+        load(LSKEY.THEMES).then((data) => {
+            themes = data as string[];
+            renderThemes();
+        });
+        load(LSKEY.DREAMS).then((data) => {
+            dreams = data as Dream[];
+        });
+    }, () => {
         window.location.replace("login.html");
-        return;
-    }
-    username = checkUser;
-    renderPage();
+    });
 }
 
-function renderPage(): void {
-    inputUsername.value = username;
+function renderThemes(): void {
     listThemes.textContent = "";
-
-    const themes = getThemes();
     themes.forEach((item) => {
         const li = ThemeListItem(item);
         listThemes.appendChild(li);
     });
+    if (themes.length > 0)
+        return;
+    const li = document.createElement("li");
+    li.textContent = "Listan är tom...";
+    listThemes.appendChild(li);
 }
 
 // Update username of current user
@@ -57,11 +68,9 @@ function updateUsername(): void {
         window.alert(message);
         error++;
     });
-
-    if (error > 0) {
-        return;
+    if (error <= 0) {
+        save(LSKEY.USERNAME, inputUsername.value.trim());
     }
-    setUsername(inputUsername.value.trim());
 }
 
 // Add a theme option
@@ -72,16 +81,14 @@ function addTheme(): void {
         error++;
     });
 
-    if (error > 0) {
-        return;
+    if (error <= 0) {
+        themes.push(inputTheme.value.trim());
+        save(LSKEY.THEMES, themes).then((data) => {
+            themes = data as string[];
+            inputTheme.value = "";
+            renderThemes();
+        }, () => console.error("Failed to add theme"));
     }
-
-    const themes = getThemes();
-    themes.push(inputTheme.value.trim());
-    setThemes(themes);
-
-    inputTheme.value = "";
-    renderPage();
 }
 
 // Remove a theme option
@@ -92,27 +99,22 @@ function removeTheme(target: HTMLElement): void {
 
     const item = target as HTMLElement;
     const val = item.closest("li")?.dataset.id;
-
     if (val === undefined)
         return;
 
-    const list = getThemes();
-    const index = list.findIndex(d => d === val);
-    if (index < 0)
-        return;
-
-    list.splice(index, 1);
-
-    setThemes(list);
-
-    refreshDreams();
-    renderPage();
+    const index = themes.findIndex(d => d === val);
+    if (index >= 0) {
+        themes.splice(index, 1);
+        save(LSKEY.THEMES, themes).then((data) => {
+            themes = data as string[];
+            renderThemes();
+            refreshDreams();
+        }, () => console.error("Failed to remove theme"));
+    }
 }
 
 function refreshDreams(): void {
-    const dreams = getDreams();
-    const themes = getThemes();
-
+    let changed = false;
     for (const key in dreams) {
         let dream = dreams[key];
         const check = themes.findIndex(t => t == dream.theme);
@@ -121,11 +123,13 @@ function refreshDreams(): void {
             dreams[key] = dream;
         }
     }
-    setDreams(dreams);
+    if (changed) {
+        save(LSKEY.DREAMS, dreams);
+    }
 }
 
 // Logout the current user
 function logOut(): void {
-    localStorage.removeItem("user");
+    clear(LSKEY.USERNAME);
     window.location.replace('login.html');
 };

@@ -1,6 +1,6 @@
 
 import { onUsernameError, onPasswordError } from "../utils/validation.js";
-import { setUsername } from "../services/data.js";
+import { LSKEY, save } from "../services/data.js";
 
 const inputUsername = document.getElementById('username') as HTMLInputElement;
 const inputPassword = document.getElementById('password') as HTMLInputElement;
@@ -55,7 +55,7 @@ function doLogin(event: Event): void {
     if (errors > 0) {
         return;
     } else {
-        setUsername(inputUsername.value);
+        save(LSKEY.USERNAME, inputUsername.value);
         const formLogin = inputUsername.parentElement as HTMLFormElement;
         formLogin.submit();
     }

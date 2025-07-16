@@ -1,8 +1,10 @@
 
-import { getUsername, getDreams, setDreams } from "../services/data.js";
+import { LSKEY, load, save } from "../services/data.js";
 import DreamListItem from "../components/DreamListItem.js";
+import Dream from "../models/Dream.js";
 
 let username: string;
+let dreams: Dream[] = [];
 
 const viewUsername = document.getElementById("user-name") as HTMLElement;
 //const viewAvatar = document.querySelector("figure") as HTMLElement;
@@ -24,30 +26,27 @@ listDreams.addEventListener("click", (event) => {
 });
 
 function initPage(): void {
-    const checkUser = getUsername();
-    if (!checkUser) {
+    load(LSKEY.USERNAME).then((data) => {
+        username = data as string;
+        viewUsername.textContent = username;
+
+        load(LSKEY.DREAMS).then((data) => {
+            dreams = data as Dream[];
+            renderDreams();
+        });
+    }, () => {
         window.location.replace("login.html");
-        return;
-    }
-    username = checkUser;
-    renderPage();
+    });
 }
 
-
-function renderPage(): void {
-    viewUsername.textContent = username;
-
+function renderDreams(): void {
     listDreams.textContent = "";
-    const list = getDreams();
-    list.forEach((item) => {
-        const li = DreamListItem(item);
-        listDreams.appendChild(li);
-    });
-    if (list.length <= 0) {
-        const li = document.createElement("li");
-        li.textContent = "Listan är tom...";
-        listDreams.appendChild(li);
-    }
+    dreams.forEach((item) => listDreams.appendChild(DreamListItem(item)));
+    if (dreams.length > 0)
+        return;
+    const li = document.createElement("li");
+    li.textContent = "Listan är tom...";
+    listDreams.appendChild(li);
 }
 
 function markDream(target: HTMLElement): void {
@@ -56,15 +55,16 @@ function markDream(target: HTMLElement): void {
     if (val === undefined || isNaN(parseInt(val)))
         return;
 
-    const list = getDreams();
-    const index = list.findIndex(d => d.id === parseInt(val));
+    const index = dreams.findIndex(d => d.id === parseInt(val));
     if (index < 0)
         return;
-
-    let dream = list[index];
+    let dream = dreams[index];
     dream.checked = input.checked;
-    list[index] = dream;
-    setDreams(list);
+    dreams[index] = dream;
+
+    save(LSKEY.DREAMS, dreams).then((data) => {
+        dreams = data as Dream[];
+    }, () => console.log("Failed to mark dream"));
 }
 
 function removeDream(target: HTMLElement): void {
@@ -77,12 +77,13 @@ function removeDream(target: HTMLElement): void {
     if (val === undefined || isNaN(parseInt(val)))
         return;
 
-    const list = getDreams();
-    const index = list.findIndex(d => d.id === parseInt(val));
+    const index = dreams.findIndex(d => d.id === parseInt(val));
     if (index < 0)
         return;
 
-    list.splice(index, 1);
-    setDreams(list);
-    renderPage();
+    dreams.splice(index, 1);
+    save(LSKEY.DREAMS, dreams).then((data) => {
+        dreams = data as Dream[];
+        renderDreams();
+    }, () => console.log("Failed to remove dream"));
 }
