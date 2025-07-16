@@ -47,6 +47,13 @@ body {
     /* För bättre rendering av typsnitt på macOS */
 }
 
+/* Force mobile layout*/
+body {
+    max-width: 320px;
+    margin-inline: auto;
+    border: 1px solid gray;
+}
+
 h1, h2, h3, h4, h5, h6 {
     margin-top: 0;
     margin-bottom: var(--spacing-medium);
