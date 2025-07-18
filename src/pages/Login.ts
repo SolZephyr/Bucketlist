@@ -52,9 +52,7 @@ function doLogin(event: Event): void {
         errors++;
     });
 
-    if (errors > 0) {
-        return;
-    } else {
+    if (errors <= 0) {
         save(LSKEY.USERNAME, inputUsername.value);
         const formLogin = inputUsername.parentElement as HTMLFormElement;
         formLogin.submit();

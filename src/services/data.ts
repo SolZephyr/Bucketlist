@@ -46,7 +46,7 @@ export const save = <T>(key: LSKEY, data: T) => {
 export const load = <T>(key: LSKEY) => {
     return new Promise((resolve, reject) => {
         const data = localStorage.getItem(key);
-        if (data === undefined)
+        if (data === undefined || data === null)
             return reject();
         return data ? resolve(JSON.parse(data)) : reject;
     });
